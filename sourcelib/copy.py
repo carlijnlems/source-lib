@@ -1,4 +1,5 @@
 import os
+import time
 from pathlib import Path
 from shutil import copy2, copytree
 
@@ -17,7 +18,8 @@ def copy(source_path: Path, destination_folder: Path) -> Path:
     destination_path = _initialize_destination_path(source_path, destination_folder)
 
     if not destination_path.exists():
-        _transfer(source_path, destination_path)
+            
+        _transfer_with_retries(source_path, destination_path)
         print(f"| Copied '{source_path}' | To: '{destination_path}'\n.")
     return destination_path
 
@@ -31,3 +33,19 @@ def _initialize_destination_path(source: Path, destination_folder: Path) -> Path
 def _transfer(source: Path, destination_path: Path) -> None:
     transfer_function = copytree if os.path.isdir(source) else copy2
     transfer_function(str(source), str(destination_path))
+
+
+def _transfer_with_retries(source: Path, destination_path: Path, retries: int = 5, delay: int = 5) -> None:
+    transfer_function = copytree if os.path.isdir(source) else copy2
+    attempt = 0
+    while attempt < retries:
+        try:
+            transfer_function(str(source), str(destination_path))
+            return
+        except Exception as e:
+            attempt += 1
+            print(f"Attempt {attempt} failed: {e}")
+            if attempt < retries:
+                print(f"Retrying in {delay} seconds...")
+                time.sleep(delay)
+    raise Exception(f"Failed to copy {source} to {destination_path} after {retries} attempts")
