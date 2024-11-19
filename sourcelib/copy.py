@@ -10,7 +10,7 @@ class NonExistingSourceFileError(Exception):
 
 def copy(source_path: Path, destination_folder: Path) -> Path:
 
-    if not source_path.exists():
+    if not _exists_with_retries(source_path):
         raise NonExistingSourceFileError(
             f"Can not copy {source_path} because it does not exists"
         )
@@ -49,3 +49,12 @@ def _transfer_with_retries(source: Path, destination_path: Path, retries: int = 
                 print(f"Retrying in {delay} seconds...")
                 time.sleep(delay)
     raise Exception(f"Failed to copy {source} to {destination_path} after {retries} attempts")
+
+
+def _exists_with_retries(path, retries=5, delay=5):
+    for _ in range(retries):
+        if path.exists():
+            return True
+        time.sleep(delay)
+    print(f"File {path} does not exist, attempted {retries} retries")
+    return False
